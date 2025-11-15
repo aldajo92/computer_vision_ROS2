@@ -19,7 +19,14 @@ public:
       rclcpp::SensorDataQoS(), // Recommended QoS for sensor data
       std::bind(&ImageSubscriber::image_callback, this, _1));
 
-    RCLCPP_INFO(this->get_logger(), "Image Subscriber Node Initialized. Waiting for images on /camera/image_raw...");
+    // Create a publisher for the processed (grayscale) image
+    publisher_ = this->create_publisher<Image>(
+      "/cv/gray_image", // Output topic name
+      rclcpp::SensorDataQoS());
+
+    RCLCPP_INFO(this->get_logger(), "Image Subscriber Node Initialized.");
+    RCLCPP_INFO(this->get_logger(), "  Subscribing to: /camera/image_raw");
+    RCLCPP_INFO(this->get_logger(), "  Publishing to: /cv/gray_image");
   }
 
 private:
@@ -45,6 +52,19 @@ private:
         // Example processing: Convert to grayscale
         cv::Mat gray_image;
         cv::cvtColor(cv_image, gray_image, cv::COLOR_BGR2GRAY);
+
+        // Convert processed image back to ROS Image message
+        std_msgs::msg::Header header;
+        header.stamp = msg->header.stamp; // Keep the same timestamp
+        header.frame_id = msg->header.frame_id;
+
+        // Create cv_bridge image and convert to ROS message
+        cv_bridge::CvImage cv_bridge_image(header, "mono8", gray_image);
+        Image::SharedPtr gray_msg = cv_bridge_image.toImageMsg();
+
+        // Publish the processed image
+        publisher_->publish(*gray_msg);
+        RCLCPP_INFO(this->get_logger(), "Published grayscale image to /cv/gray_image");
         // --- End of Example ---
       }
       else
@@ -80,6 +100,7 @@ private:
   }
 
   rclcpp::Subscription<Image>::SharedPtr subscription_;
+  rclcpp::Publisher<Image>::SharedPtr publisher_;
 };
 
 int main(int argc, char * argv[])

@@ -92,6 +92,67 @@ ros2 topic info /camera/image_raw
 ros2 topic hz /camera/image_raw
 ```
 
+## CV Processing Node (C++)
+
+The `cv_node` subscribes to images, processes them with OpenCV, and publishes the results.
+
+### Topics
+
+- **Subscribes to:** `/camera/image_raw` (sensor_msgs/Image)
+- **Publishes to:** `/cv/gray_image` (sensor_msgs/Image)
+
+### Processing
+
+Currently performs grayscale conversion. You can modify the processing in `src/cv_node.cpp` to add your own computer vision algorithms.
+
+### Usage
+
+```bash
+# Run the CV processing node standalone
+ros2 run computer_vision cv_node
+
+# View the processed images
+ros2 run rqt_image_view rqt_image_view
+# Select /cv/gray_image from the dropdown
+```
+
+## Complete CV Pipeline Launch
+
+The `cv_node_process.launch.py` launch file runs both the image publisher and the C++ subscriber/processor together:
+
+```bash
+# Run both publisher and subscriber
+ros2 launch computer_vision cv_node_process.launch.py
+
+# With custom parameters for the publisher
+ros2 launch computer_vision cv_node_process.launch.py \
+  max_index:=100 \
+  publish_frequency:=15.0
+```
+
+This launch file:
+- **image_publisher_node.py**: Publishes images from the dataset at the specified frequency to `/camera/image_raw`
+- **cv_node**: Subscribes to `/camera/image_raw`, processes images (grayscale conversion), and publishes results to `/cv/gray_image`
+
+### Visualizing Both Original and Processed Images
+
+```bash
+# Terminal 1: Run the complete pipeline
+ros2 launch computer_vision cv_node_process.launch.py
+
+# Terminal 2: View original images
+ros2 run rqt_image_view rqt_image_view /camera/image_raw
+
+# Terminal 3: View processed images
+ros2 run rqt_image_view rqt_image_view /cv/gray_image
+```
+
+### Available Topics
+
+When running the complete pipeline, you'll have:
+- `/camera/image_raw` - Original color images from dataset
+- `/cv/gray_image` - Processed grayscale images
+
 ## Dataset
 
 The dataset folder contains enumerated PNG images (0000000000.png to 0000000113.png) that are published sequentially by the image publisher node.
