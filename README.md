@@ -79,7 +79,7 @@ rviz2
 # Then add an Image display and set the topic to /camera/image_raw
 ```
 
-### Inspecting the Topic
+### Inspecting the Topics
 
 ```bash
 # List topics
@@ -87,10 +87,103 @@ ros2 topic list
 
 # Echo topic info
 ros2 topic info /camera/image_raw
+ros2 topic info /cv/sobel_image
 
 # Display publishing rate
 ros2 topic hz /camera/image_raw
+ros2 topic hz /cv/sobel_image
 ```
+
+## CV Processing Node (C++)
+
+The `cv_node` subscribes to images, processes them with OpenCV, and publishes the results.
+
+### Topics
+
+- **Subscribes to:** `/camera/image_raw` (sensor_msgs/Image)
+- **Publishes to:** `/cv/sobel_image` (sensor_msgs/Image)
+
+### Processing
+
+Currently performs **Sobel edge detection** to detect edges in the images:
+- Converts image to grayscale
+- Applies Sobel operator in X and Y directions
+- Combines gradients to produce edge magnitude image
+
+You can modify the processing in `src/cv_node.cpp` to add your own computer vision algorithms.
+
+### Usage
+
+```bash
+# Run the CV processing node standalone
+ros2 run computer_vision cv_node
+
+# View the processed images
+ros2 run rqt_image_view rqt_image_view
+# Select /cv/sobel_image from the dropdown
+```
+
+## Complete CV Pipeline Launch
+
+The `cv_node_process.launch.py` launch file runs the complete computer vision pipeline with visualization:
+
+```bash
+# Run the complete pipeline with RViz
+ros2 launch computer_vision cv_node_process.launch.py
+
+# With custom parameters for the publisher
+ros2 launch computer_vision cv_node_process.launch.py \
+  max_index:=100 \
+  publish_frequency:=15.0
+```
+
+This launch file starts:
+- **image_publisher_node.py**: Publishes images from the dataset at the specified frequency to `/camera/image_raw`
+- **cv_node**: Subscribes to `/camera/image_raw`, processes images (Sobel edge detection), and publishes results to `/cv/sobel_image`
+- **RViz2**: Opens with pre-configured visualization for both original and processed images
+
+### Visualizing Both Original and Processed Images
+
+**Option 1: Using RViz (Included in Launch File)**
+
+RViz2 will automatically open with both image displays configured:
+
+```bash
+# Simply run the launch file - RViz opens automatically
+ros2 launch computer_vision cv_node_process.launch.py
+```
+
+The RViz configuration includes:
+- Two image display windows showing both topics simultaneously
+- Pre-configured QoS settings for optimal image streaming
+
+**Option 2: Using rqt_image_view (Separate Windows)**
+
+If you prefer separate viewers:
+
+```bash
+# Terminal 1: Run the complete pipeline
+ros2 launch computer_vision cv_node_process.launch.py
+
+# Terminal 2: View original images
+ros2 run rqt_image_view rqt_image_view /camera/image_raw
+
+# Terminal 3: View processed images (Sobel edges)
+ros2 run rqt_image_view rqt_image_view /cv/sobel_image
+```
+
+### Available Topics
+
+When running the complete pipeline, you'll have:
+- `/camera/image_raw` - Original color images from dataset
+- `/cv/sobel_image` - Processed images with Sobel edge detection
+
+### RViz Configuration
+
+The package includes a pre-configured RViz file (`rviz/viewer.rviz`) that displays both image topics. You can:
+- Modify the configuration to add more displays
+- Save your custom configuration
+- Load it manually: `rviz2 -d /path/to/viewer.rviz`
 
 ## Dataset
 

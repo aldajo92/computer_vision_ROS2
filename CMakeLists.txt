@@ -33,6 +33,11 @@ install(DIRECTORY
   launch/
   DESTINATION share/${PROJECT_NAME}/launch/)
 
+# Install RViz config files
+install(DIRECTORY
+  rviz/
+  DESTINATION share/${PROJECT_NAME}/rviz/)
+
 # Install dataset directory
 install(DIRECTORY
   dataset/
